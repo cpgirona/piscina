@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva de Piscina Comunitaria</title>
+    <!-- Librería oficial de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; padding: 15px 10px; }
+        
+        @media (min-width: 768px) {
+            body { padding: 30px 20px; }
+        }
+
+        /* Contenedor principal adaptativo */
+        .app-wrap { max-width: 650px; margin: 0 auto; transition: max-width 0.15s ease; }
+        @media (min-width: 992px) {
+            .app-wrap { max-width: 1000px; }
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-bottom: 20px; }
+        .header h1 { font-size: 14px; font-weight: 500; color: #64748b; word-break: break-all; padding-right: 10px; }
+        .btn-salir { background: none; border: none; color: #2563eb; font-size: 14px; cursor: pointer; font-weight: 500; white-space: nowrap; }
+        .btn-salir:hover { text-decoration: underline; }
+        
+        .panel { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); margin-bottom: 25px; }
+        .panel h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 15px; color: #64748b; text-transform: uppercase; }
+        
+        /* Estructura en rejilla: 1 columna en móvil / 2 columnas en PC */
+        .grid-nueva-reserva { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) {
+            .grid-nueva-reserva { grid-template-columns: 1fr 1.5fr; gap: 25px; align-items: start; }
+        }
+
+        /* Lista de Mis Reservas */
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 10px; background: #fafafa; gap: 10px; }
+        .list-item div { font-size: 14px; line-height: 1.4; color: #334155; }
+        
+        .btn-cancelar { background-color: #dc2626; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.2s; white-space: nowrap; }
+        .btn-cancelar:hover { background-color: #b91c1c; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #475569; }
+        
+        select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #fff; font-size: 15px; color: #1e293b; outline: none; -webkit-appearance: none; }
+        select:focus { border-color: #2563eb; }
+        
+        /* Tarjetas de Turnos con Scroll en ordenador */
+        .scroll-turnos { max-height: none; }
+        @media (min-width: 768px) {
+            .scroll-turnos { max-height: 520px; overflow-y: auto; padding-right: 5px; }
+        }
+
+        .slot-card { display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; background-color: #fff; margin-bottom: 10px; gap: 15px; transition: border-color 0.2s; }
+        .slot-card:has(input:checked) { border-color: #2563eb; background-color: #eff6ff; }
+        
+        .slot-info { display: flex; align-items: center; gap: 12px; font-size: 15px; flex: 1; min-width: 0; }
+        .slot-info label { cursor: pointer; display: inline-block; word-break: break-word; line-height: 1.3; font-weight: 500; width: 100%; }
+        .slot-status { color: #64748b; font-size: 13px; display: block; margin-top: 2px; font-weight: 400; }
+        
+        .btn-confirmar { width: 100%; background-color: #2563eb; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+        .btn-confirmar:hover { background-color: #1d4ed8; }
+        
+        /* El botón inferior redundante de PC se oculta para limpiar la interfaz */
+        .btn-bottom { margin-top: 15px; }
+        @media (min-width: 768px) {
+            .btn-bottom { display: none; }
+        }
+
+        input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; flex-shrink: 0; }
+        
+        /* Pantalla de Login */
+        .login-container { max-width: 400px; margin: 40px auto; background: white; padding: 30px 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        @media (min-width: 768px) { .login-container { margin: 100px auto; padding: 40px; } }
+        .login-container h2 { font-size: 24px; margin-bottom: 20px; font-weight: 500; text-align: center; }
+        .input-text { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-wrap">
+        <!-- PANTALLA DE LOGIN -->
+        <div id="vista-login" class="login-container" style="display: block;">
+            <h2>Acceso Vecinos</h2>
+            <div class="form-group">
+                <label>Departamento</label>
+                <input type="text" id="login-usuario" class="input-text" placeholder="Ej: Piso 2B">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="login-password" class="input-text" placeholder="••••••••">
+            </div>
+            <button class="btn-confirmar" onclick="iniciarSesion()">Entrar</button>
+        </div>
+
+        <!-- PANTALLA DE RESERVAS -->
+        <div id="vista-app" style="display: none;">
+            <div class="header">
+                <h1 id="usuario-conectado">Conectado como: -</h1>
+                <button class="btn-salir" onclick="cerrarSesion()">Salir</button>
+            </div>
+
+            <!-- BLOQUE 1: MIS RESERVAS -->
+            <div class="panel">
+                <h2>Mis Reservas Activas</h2>
+                <div id="lista-mis-reservas">
+                    <!-- Se carga dinámicamente -->
+                </div>
+            </div>
+
+            <!-- BLOQUE 2: NUEVA RESERVA -->
+            <div class="panel">
+                <h2>Nueva Reserva</h2>
+                
+                <div class="grid-nueva-reserva">
+                    
+                    <!-- Columna Izquierda: Selección de Fecha + Botón Confirmar justo debajo -->
+                    <div class="col-control">
+                        <div class="form-group">
+                            <label for="fecha">Seleccionar Fecha:</label>
+                            <select id="fecha" onchange="cargarTurnos()"></select>
+                        </div>
+                        <!-- Botón Confirmar: Posición estratégica fija debajo de la fecha -->
+                        <button class="btn-confirmar" onclick="crearReserva()">Confirmar Selección</button>
+                    </div>
+
+                    <!-- Columna Derecha: Listado de tarjetas de turnos -->
+                    <div class="col-turnos">
+                        <div id="lista-turnos" class="scroll-turnos">
+                            <!-- Tarjetas dinámicas -->
+                        </div>
+                        <!-- Botón Confirmar secundario de apoyo (Solo se renderiza en móvil tras el scroll) -->
+                        <button class="btn-confirmar btn-bottom" onclick="crearReserva()">Confirmar Selección ↓</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === CONFIGURACIÓN DE SUPABASE ===
+        const SUPABASE_URL = "https://prlerasuntrvteswaipe.supabase.co"; 
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBybGVyYXN1bnRydnRlc3dhaXBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3MzU0OTIsImV4cCI6MjA5NTMxMTQ5Mn0.rqnpsY-KzW2QzgIUDmU757G4curEo6QUQ5b6bNx-8Eg"; 
+        
+        let _supabase = null;
+        let usuarioActual = null;
+        const AFORO_MAXIMO = 7;
+        let primeraSincronizacionHecha = false;
+
+        function inicializarSupabase() {
+            try {
+                if (typeof supabase !== 'undefined') {
+                    _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    return true;
+                }
+            } catch (e) {
+                console.error("Cargando base de datos...", e);
+            }
+            return false;
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            if (!inicializarSupabase()) {
+                const interval = setInterval(() => {
+                    if (inicializarSupabase()) {
+                        clearInterval(interval);
+                        comprobarSesionGuardada();
+                    }
+                }, 100);
+            } else {
+                comprobarSesionGuardada();
+            }
+        });
+
+        function comprobarSesionGuardada() {
+            let usuarioGuardado = null;
+            try { usuarioGuardado = localStorage.getItem("piscina_usuario_id"); } catch (e) {}
+
+            if (usuarioGuardado) {
+                usuarioActual = usuarioGuardado;
+                document.getElementById('usuario-conectado').innerText = `Conectado como: ${usuarioActual}`;
+                document.getElementById('vista-login').style.display = 'none';
+                document.getElementById('vista-app').style.display = 'block';
+                inicializarFechas();
+                cargarMisReservas();
+            }
+        }
+
+        async function iniciarSesion() {
+            if (!_supabase) inicializarSupabase();
+            const user = document.getElementById('login-usuario').value.trim();
+            const pass = document.getElementById('login-password').value;
+
+            if(!user || !pass) {
+                alert("Por favor, rellena todos los campos.");
+                return;
+            }
+
+            try {
+                const { data, error } = await _supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('id', user)
+                    .single();
+
+                if (error || !data || data.password !== pass) {
+                    alert("Usuario o contraseña incorrectos");
+                    return;
+                }
+
+                usuarioActual = user;
+                try { localStorage.setItem("piscina_usuario_id", usuarioActual); } catch(e) {}
+                
+                document.getElementById('usuario-conectado').innerText = `Conectado como: ${usuarioActual}`;
+                document.getElementById('vista-login').style.display = 'none';
+                document.getElementById('vista-app').style.display = 'block';
+                
+                inicializarFechas();
+                await cargarMisReservas();
+            } catch (err) {
+                alert("Error al conectar con la base de datos.");
+            }
+        }
+
+        function cerrarSesion() {
+            usuarioActual = null;
+            try { localStorage.removeItem("piscina_usuario_id"); } catch(e) {}
+            document.getElementById('vista-login').style.display = 'block';
+            document.getElementById('vista-app').style.display = 'none';
+            document.getElementById('login-usuario').value = '';
+            document.getElementById('login-password').value = '';
+        }
+
+        function inicializarFechas() {
+            const selectFecha = document.getElementById('fecha');
+            selectFecha.innerHTML = '';
+            const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
+            
+            for(let i = 0; i < 5; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() + i);
+                const offset = d.getTimezoneOffset();
+                const tuFecha = new Date(d.getTime() - (offset * 60 * 1000));
+                const iso = tuFecha.toISOString().split('T')[0];
+                
+                let texto = d.toLocaleDateString('es-ES', opciones);
+                if(i === 0) texto = `Hoy, ${texto}`;
+                if(i === 1) texto = `Mañana, ${texto}`;
+
+                const opt = document.createElement('option');
+                opt.value = iso;
+                opt.innerText = texto;
+                selectFecha.appendChild(opt);
+            }
+            cargarTurnos();
+        }
+
+        async function cargarMisReservas() {
+            if (!_supabase) return;
+            try {
+                const { data, error } = await _supabase
+                    .from('reservas')
+                    .select('*')
+                    .eq('usuario_id', usuarioActual)
+                    .order('fecha', { ascending: true })
+                    .order('hora_inicio', { ascending: true });
+
+                const contenedor = document.getElementById('lista-mis-reservas');
+                contenedor.innerHTML = '';
+
+                if(error || !data || data.length === 0) {
+                    contenedor.innerHTML = '<p style="color:#64748b; font-size: 14px;">No tienes reservas activas para los próximos días.</p>';
+                    return;
+                }
+
+                data.forEach(res => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    const partesFecha = res.fecha.split('-');
+                    const f = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2]);
+                    const fechaTxt = f.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+
+                    item.innerHTML = `
+                        <div><strong>${fechaTxt}</strong><br>${res.hora_inicio.substring(0,5)} - ${res.hora_fin.substring(0,5)} (${res.cantidad_personas} ${res.cantidad_personas > 1 ? 'personas' : 'persona'})</div>
+                        <button class="btn-cancelar" onclick="cancelarReserva('${res.id}')">Cancelar</button>
+                    `;
+                    contenedor.appendChild(item);
+                });
+            } catch (err) {}
+        }
+
+        function replicarCantidadPersonas(valorCambiado) {
+            if (primeraSincronizacionHecha) return;
+            const todosLosSelects = document.querySelectorAll('#lista-turnos select');
+            todosLosSelects.forEach(sel => {
+                if (sel.querySelector(`option[value="${valorCambiado}"]`)) {
+                    sel.value = valorCambiado;
+                }
+            });
+            primeraSincronizacionHecha = true; 
+        }
+
+        async function cargarTurnos() {
+            if (!_supabase) return;
+            primeraSincronizacionHecha = false; 
+            const fechaSel = document.getElementById('fecha').value;
+            
+            try {
+                const { data: reservasDia, error } = await _supabase
+                    .from('reservas')
+                    .select('*')
+                    .eq('fecha', fechaSel);
+
+                const contenedor = document.getElementById('lista-turnos');
+                contenedor.innerHTML = '';
+
+                const ahora = new Date();
+                const offset = ahora.getTimezoneOffset();
+                const hoyLocal = new Date(ahora.getTime() - (offset * 60 * 1000));
+                const hoyISO = hoyLocal.toISOString().split('T')[0];
+                const horaActualTxt = `${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}:00`;
+
+                let hora = 10;
+                let min = 0;
+                let turnosMostrados = 0;
+
+                while(hora < 21) {
+                    const hInicio = `${String(hora).padStart(2,'0')}:${String(min).padStart(2,'0')}:00`;
+                    min += 20;
+                    if(min >= 60) { min = min - 60; hora++; }
+                    const hFin = `${String(hora).padStart(2,'0')}:${String(min).padStart(2,'0')}:00`;
+
+                    if (hora >= 21 && min > 0) break;
+                    if (fechaSel === hoyISO && hInicio < horaActualTxt) continue;
+
+                    let personasContadas = 0;
+                    if(!error && reservasDia) {
+                        reservasDia.forEach(r => {
+                            if(r.hora_inicio === hInicio) personasContadas += r.cantidad_personas;
+                        });
+                    }
+
+                    const plazasLibres = AFORO_MAXIMO - personasContadas;
+
+                    if (plazasLibres > 0) {
+                        turnosMostrados++;
+                        const row = document.createElement('div');
+                        row.className = 'slot-card';
+                        const slotId = `slot_${hInicio.replace(/:/g,'')}`;
+                        
+                        let maxSeleccionable = Math.min(4, plazasLibres);
+                        let optionsPersonas = '';
+                        for(let p = 1; p <= maxSeleccionable; p++) {
+                            optionsPersonas += `<option value="${p}">Pers: ${p}</option>`;
+                        }
+
+                    row.innerHTML = `
+                        <div class="slot-info">
+                            <input type="checkbox" name="turnos_seleccionados" id="${slotId}" value="${hInicio}|${hFin}">
+                            <label for="${slotId}">
+                                <strong>${hInicio.substring(0,5)} - ${hFin.substring(0,5)}</strong>
+                                <span class="slot-status">(${plazasLibres} libres)</span>
+                            </label>
+                        </div>
+                        <select id="cant_${slotId}" style="width: auto; padding: 6px; font-size: 14px;" onchange="replicarCantidadPersonas(this.value)">
+                            ${optionsPersonas}
+                        </select>
+                    `;
+                        contenedor.appendChild(row);
+                    }
+                }
+
+                if (turnosMostrados === 0) {
+                    contenedor.innerHTML = '<p style="color:#64748b; padding: 20px; text-align: center; font-size: 14px;">No quedan turnos disponibles para la fecha seleccionada.</p>';
+                }
+            } catch (err) {}
+        }
+
+        async function crearReserva() {
+            if (!_supabase) return;
+            const elegidos = document.querySelectorAll('input[name="turnos_seleccionados"]:checked');
+            if(elegidos.length === 0) {
+                alert("Por favor, selecciona al menos un turno.");
+                return;
+            }
+
+            const fechaSel = document.getElementById('fecha').value;
+
+            try {
+                const { data: misReservasHoy, error: errLimite } = await _supabase
+                    .from('reservas')
+                    .select('hora_inicio')
+                    .eq('usuario_id', usuarioActual)
+                    .eq('fecha', fechaSel);
+
+                let turnosMananaYaReservados = 0;
+                let turnosTardeYaReservados = 0;
+
+                if (!errLimite && misReservasHoy) {
+                    misReservasHoy.forEach(res => {
+                        if (res.hora_inicio < "14:00:00") turnosMananaYaReservados++;
+                        else turnosTardeYaReservados++;
+                    });
+                }
+
+                let nuevosManana = 0;
+                let nuevosTarde = 0;
+
+                elegidos.forEach(cb => {
+                    const [hInicio] = cb.value.split('|');
+                    if (hInicio < "14:00:00") nuevosManana++;
+                    else nuevosTarde++;
+                });
+
+                if (turnosMananaYaReservados + nuevosManana > 4) {
+                    alert(`Límite MAÑANA: Ya tienes ${turnosMananaYaReservados} turnos y solicitas ${nuevosManana} más. Máximo 4 tramos (1h 20m).`);
+                    return;
+                }
+                if (turnosTardeYaReservados + nuevosTarde > 4) {
+                    alert(`Límite TARDE: Ya tienes ${turnosTardeYaReservados} turnos y solicitas ${nuevosTarde} más. Máximo 4 tramos (1h 20m).`);
+                    return;
+                }
+
+                const { data: todasLasReservasDia, error: errAforo } = await _supabase
+                    .from('reservas')
+                    .select('hora_inicio, cantidad_personas')
+                    .eq('fecha', fechaSel);
+
+                const registrosInsertar = [];
+
+                for (let cb of elegidos) {
+                    const [hInicio, hFin] = cb.value.split('|');
+                    const cantPersonas = parseInt(document.getElementById(`cant_${cb.id}`).value);
+
+                    let personasRegistradas = 0;
+                    if (!errAforo && todasLasReservasDia) {
+                        todasLasReservasDia.forEach(r => {
+                            if (r.hora_inicio === hInicio) personasRegistradas += r.cantidad_personas;
+                        });
+                    }
+
+                    const plazasRealesLibres = AFORO_MAXIMO - personasRegistradas;
+                    if (cantPersonas > plazasRealesLibres) {
+                        alert(`¡Conflicto de plazas! En el turno ${hInicio.substring(0,5)} ya solo quedan ${plazasRealesLibres} huecos.`);
+                        await cargarTurnos();
+                        return; 
+                    }
+
+                    registrosInsertar.push({
+                        usuario_id: usuarioActual,
+                        fecha: fechaSel,
+                        hora_inicio: hInicio,
+                        hora_fin: hFin,
+                        cantidad_personas: cantPersonas
+                    });
+                }
+
+                // CORREGIDO: Inserción directa y limpia en la tabla de reservas
+                const { error } = await _supabase
+                    .from('reservas')
+                    .insert(registrosInsertar);
+
+                if(error) {
+                    alert("Error al guardar el bloque de reservas.");
+                } else {
+                    alert("¡Reservas confirmadas con éxito!");
+                    await cargarMisReservas();
+                    await cargarTurnos();
+                }
+            } catch (err) {}
+        }
+
+        async function cancelarReserva(idReserva) {
+            if (!_supabase) return;
+            if(!confirm("¿Seguro que deseas cancelar esta reserva?")) return;
+
+            try {
+                const { error } = await _supabase
+                    .from('reservas')
+                    .delete()
+                    .eq('id', idReserva)
+                    .eq('usuario_id', usuarioActual);
+
+                if(error) {
+                    alert("No se pudo cancelar.");
+                } else {
+                    alert("Reserva cancelada correctamente.");
+                    await cargarMisReservas();
+                    await cargarTurnos();
+                }
+            } catch (err) {}
+        }
+    </script>
+</body>
+</html>
