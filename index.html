@@ -105,6 +105,16 @@
                     </div>
             </div>
 
+            <div class="panel" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 5px solid #22c55e;">
+                <h2 style="color: #166534; margin-bottom: 10px;">📋 Normas de Reserva</h2>
+                <ul style="font-size: 14px; color: #15803d; padding-left: 20px; line-height: 1.6;">
+                    <li><strong>Aforo máximo:</strong> 7 personas simultáneas en el recinto.</li>
+                    <li><strong>Límites por vivienda:</strong> Máximo 3 turnos (1h) por la mañana (hasta las 14:00) y 3 turnos por la tarde.</li>
+                    <li><strong>Antelación:</strong> Puedes reservar hasta con 5 días de margen.</li>
+                    <li><strong>Civismo:</strong> Por favor, si finalmente no vas a bajar, <strong>cancela tu reserva</strong> para liberar el hueco a otro vecino.</li>
+                </ul>
+            </div>
+
             <div class="panel">
                 <h2>Nueva Reserva</h2>
                 
@@ -447,7 +457,6 @@
                     });
                 }
 
-                // CORREGIDO: Inserción directa y limpia en la tabla de reservas
                 const { error } = await _supabase
                     .from('reservas')
                     .insert(registrosInsertar);
