@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reserva de Piscina Comunitaria</title>
-    <!-- Librería oficial de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
@@ -81,7 +80,6 @@
 <body>
 
     <div class="app-wrap">
-        <!-- PANTALLA DE LOGIN -->
         <div id="vista-login" class="login-container" style="display: block;">
             <h2>Acceso Vecinos</h2>
             <div class="form-group">
@@ -95,43 +93,34 @@
             <button class="btn-confirmar" onclick="iniciarSesion()">Entrar</button>
         </div>
 
-        <!-- PANTALLA DE RESERVAS -->
         <div id="vista-app" style="display: none;">
             <div class="header">
                 <h1 id="usuario-conectado">Conectado como: -</h1>
                 <button class="btn-salir" onclick="cerrarSesion()">Salir</button>
             </div>
 
-            <!-- BLOQUE 1: MIS RESERVAS -->
             <div class="panel">
                 <h2>Mis Reservas Activas</h2>
                 <div id="lista-mis-reservas">
-                    <!-- Se carga dinámicamente -->
-                </div>
+                    </div>
             </div>
 
-            <!-- BLOQUE 2: NUEVA RESERVA -->
             <div class="panel">
                 <h2>Nueva Reserva</h2>
                 
                 <div class="grid-nueva-reserva">
                     
-                    <!-- Columna Izquierda: Selección de Fecha + Botón Confirmar justo debajo -->
                     <div class="col-control">
                         <div class="form-group">
                             <label for="fecha">Seleccionar Fecha:</label>
                             <select id="fecha" onchange="cargarTurnos()"></select>
                         </div>
-                        <!-- Botón Confirmar: Posición estratégica fija debajo de la fecha -->
                         <button class="btn-confirmar" onclick="crearReserva()">Confirmar Selección</button>
                     </div>
 
-                    <!-- Columna Derecha: Listado de tarjetas de turnos -->
                     <div class="col-turnos">
                         <div id="lista-turnos" class="scroll-turnos">
-                            <!-- Tarjetas dinámicas -->
-                        </div>
-                        <!-- Botón Confirmar secundario de apoyo (Solo se renderiza en móvil tras el scroll) -->
+                            </div>
                         <button class="btn-confirmar btn-bottom" onclick="crearReserva()">Confirmar Selección ↓</button>
                     </div>
 
@@ -415,12 +404,12 @@
                     else nuevosTarde++;
                 });
 
-                if (turnosMananaYaReservados + nuevosManana > 4) {
-                    alert(`Límite MAÑANA: Ya tienes ${turnosMananaYaReservados} turnos y solicitas ${nuevosManana} más. Máximo 4 tramos (1h 20m).`);
+                if (turnosMananaYaReservados + nuevosManana > 3) {
+                    alert(`Límite MAÑANA: Ya tienes ${turnosMananaYaReservados} turnos y solicitas ${nuevosManana} más. Máximo 3 tramos (1h).`);
                     return;
                 }
-                if (turnosTardeYaReservados + nuevosTarde > 4) {
-                    alert(`Límite TARDE: Ya tienes ${turnosTardeYaReservados} turnos y solicitas ${nuevosTarde} más. Máximo 4 tramos (1h 20m).`);
+                if (turnosTardeYaReservados + nuevosTarde > 3) {
+                    alert(`Límite TARDE: Ya tienes ${turnosTardeYaReservados} turnos y solicitas ${nuevosTarde} más. Máximo 3 tramos (1h).`);
                     return;
                 }
 
